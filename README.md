@@ -1,210 +1,68 @@
----
-base_model: unsloth/meta-llama-3.1-8b-unsloth-bnb-4bit
-library_name: peft
-pipeline_tag: text-generation
-tags:
-- base_model:adapter:unsloth/meta-llama-3.1-8b-unsloth-bnb-4bit
-- lora
-- sft
-- transformers
-- trl
-- unsloth
----
+# llama3.1-8b-coder-devops
+
+**Llama 3.1 8B + LoRA** especializado en **Docker**, **docker-compose**, **Kubernetes** (Deployments, Services, Ingress, RBAC, NetworkPolicy, Helm charts, Kustomize, GitOps, ArgoCD, etc.), CI/CD y troubleshooting DevOps.
+
+Perfecto como asistente de infraestructura como código (IaC) en entornos reales de producción.
+
+### Lo que hace increíblemente bien
+- Dockerfiles multi-stage optimizados (< 120 MB, non-root, multi-arch)
+- Kubernetes manifests de producción (PDB, HPA, affinity/anti-affinity, secrets, etc.)
+- Helm charts y valores complejos
+- Explicación paso a paso de errores de Docker/K8s
+- Migración de docker-compose → Kubernetes
+- GitOps workflows con ArgoCD/Flux
+
+### LoRA & Modelo
+- Base: `unsloth/Meta-Llama-3.1-8B-bnb-4bit`
+- LoRA rank: 64 (alpha=128, dropout=0.05)
+- Target modules: todos los principales (q,k,v,o,gate,up,down)
+- Dataset: ~25k ejemplos de alta calidad (Docker + Kubernetes reales anonimizados + documentación oficial)
+
+### Enlaces importantes
+| Recurso                            | Link                                                                                  |
+|------------------------------------|---------------------------------------------------------------------------------------|
+| LoRA (este repo)                   | `NotLoadedExe/llama3.1-8b-coder-devops` (ya incluido)                                 |
+| Modelo completo en Hugging Face    | `https://huggingface.co/NotLoadedExe/llama3.1-8b-coder-devops`                        |
+| Dataset de entrenamiento (~25k)    | `https://huggingface.co/datasets/NotLoadedExe/llama3.1-8b-coder-devops-dataset`       |
+| Docker image lista para producción | `ghcr.io/notloadedexe/llama3.1-8b-coder-devops:latest`                                |
+| Helm chart (próximamente)          | `https://github.com/NotLoadedExe/helm-charts`                                         |
+
+### Uso rápido con Docker (recomendado)
+
+```bash
+docker run -d --gpus all -p 8080:8080 \
+  -e HUGGINGFACE_TOKEN=hf_xxx \
+  ghcr.io/notloadedexe/llama3.1-8b-coder-devops:latest
+```
+# Uso local con Transformers + PEFT
+
+```bash
+from peft import PeftModel
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
+
+model_id = "unsloth/Meta-Llama-3.1-8B-bnb-4bit"
+lora_id = "NotLoadedExe/llama3.1-8b-coder-devops"
+
+model = AutoModelForCausalLM.from_pretrained(
+    model_id, torch_dtype=torch.bfloat16, device_map="auto"
+)
+model = PeftModel.from_pretrained(model, lora_id)
+
+tokenizer = AutoTokenizer.from_pretrained(lora_id)
+
+prompt = "Escribe un Deployment de Kubernetes para una app FastAPI con 3 réplicas, HPA, non-root, probes y resource limits óptimos:\n"
+inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+outputs = model.generate(**inputs, max_new_tokens=1024, temperature=0.2)
+print(tokenizer.decode(outputs[0], skip_special_tokens=True))
+```
+# Licencias
+
+LoRA weights → MIT (puedes usarlos comercialmente sin problema)
+Modelo base → Meta Llama 3.1 Community License
+
+**¡Listo para producción, CI/CD y GitOps!**
+
+Cualquier duda o mejora → abre un Issue o PR. ¡Acepto contribuciones!
+Made with by NotLoadedExe
 
-# Model Card for Model ID
-
-<!-- Provide a quick summary of what the model is/does. -->
-
-
-
-## Model Details
-
-### Model Description
-
-<!-- Provide a longer summary of what this model is. -->
-
-
-
-- **Developed by:** [More Information Needed]
-- **Funded by [optional]:** [More Information Needed]
-- **Shared by [optional]:** [More Information Needed]
-- **Model type:** [More Information Needed]
-- **Language(s) (NLP):** [More Information Needed]
-- **License:** [More Information Needed]
-- **Finetuned from model [optional]:** [More Information Needed]
-
-### Model Sources [optional]
-
-<!-- Provide the basic links for the model. -->
-
-- **Repository:** [More Information Needed]
-- **Paper [optional]:** [More Information Needed]
-- **Demo [optional]:** [More Information Needed]
-
-## Uses
-
-<!-- Address questions around how the model is intended to be used, including the foreseeable users of the model and those affected by the model. -->
-
-### Direct Use
-
-<!-- This section is for the model use without fine-tuning or plugging into a larger ecosystem/app. -->
-
-[More Information Needed]
-
-### Downstream Use [optional]
-
-<!-- This section is for the model use when fine-tuned for a task, or when plugged into a larger ecosystem/app -->
-
-[More Information Needed]
-
-### Out-of-Scope Use
-
-<!-- This section addresses misuse, malicious use, and uses that the model will not work well for. -->
-
-[More Information Needed]
-
-## Bias, Risks, and Limitations
-
-<!-- This section is meant to convey both technical and sociotechnical limitations. -->
-
-[More Information Needed]
-
-### Recommendations
-
-<!-- This section is meant to convey recommendations with respect to the bias, risk, and technical limitations. -->
-
-Users (both direct and downstream) should be made aware of the risks, biases and limitations of the model. More information needed for further recommendations.
-
-## How to Get Started with the Model
-
-Use the code below to get started with the model.
-
-[More Information Needed]
-
-## Training Details
-
-### Training Data
-
-<!-- This should link to a Dataset Card, perhaps with a short stub of information on what the training data is all about as well as documentation related to data pre-processing or additional filtering. -->
-
-[More Information Needed]
-
-### Training Procedure
-
-<!-- This relates heavily to the Technical Specifications. Content here should link to that section when it is relevant to the training procedure. -->
-
-#### Preprocessing [optional]
-
-[More Information Needed]
-
-
-#### Training Hyperparameters
-
-- **Training regime:** [More Information Needed] <!--fp32, fp16 mixed precision, bf16 mixed precision, bf16 non-mixed precision, fp16 non-mixed precision, fp8 mixed precision -->
-
-#### Speeds, Sizes, Times [optional]
-
-<!-- This section provides information about throughput, start/end time, checkpoint size if relevant, etc. -->
-
-[More Information Needed]
-
-## Evaluation
-
-<!-- This section describes the evaluation protocols and provides the results. -->
-
-### Testing Data, Factors & Metrics
-
-#### Testing Data
-
-<!-- This should link to a Dataset Card if possible. -->
-
-[More Information Needed]
-
-#### Factors
-
-<!-- These are the things the evaluation is disaggregating by, e.g., subpopulations or domains. -->
-
-[More Information Needed]
-
-#### Metrics
-
-<!-- These are the evaluation metrics being used, ideally with a description of why. -->
-
-[More Information Needed]
-
-### Results
-
-[More Information Needed]
-
-#### Summary
-
-
-
-## Model Examination [optional]
-
-<!-- Relevant interpretability work for the model goes here -->
-
-[More Information Needed]
-
-## Environmental Impact
-
-<!-- Total emissions (in grams of CO2eq) and additional considerations, such as electricity usage, go here. Edit the suggested text below accordingly -->
-
-Carbon emissions can be estimated using the [Machine Learning Impact calculator](https://mlco2.github.io/impact#compute) presented in [Lacoste et al. (2019)](https://arxiv.org/abs/1910.09700).
-
-- **Hardware Type:** [More Information Needed]
-- **Hours used:** [More Information Needed]
-- **Cloud Provider:** [More Information Needed]
-- **Compute Region:** [More Information Needed]
-- **Carbon Emitted:** [More Information Needed]
-
-## Technical Specifications [optional]
-
-### Model Architecture and Objective
-
-[More Information Needed]
-
-### Compute Infrastructure
-
-[More Information Needed]
-
-#### Hardware
-
-[More Information Needed]
-
-#### Software
-
-[More Information Needed]
-
-## Citation [optional]
-
-<!-- If there is a paper or blog post introducing the model, the APA and Bibtex information for that should go in this section. -->
-
-**BibTeX:**
-
-[More Information Needed]
-
-**APA:**
-
-[More Information Needed]
-
-## Glossary [optional]
-
-<!-- If relevant, include terms and calculations in this section that can help readers understand the model or model card. -->
-
-[More Information Needed]
-
-## More Information [optional]
-
-[More Information Needed]
-
-## Model Card Authors [optional]
-
-[More Information Needed]
-
-## Model Card Contact
-
-[More Information Needed]
-### Framework versions
-
-- PEFT 0.18.0
